@@ -16,6 +16,7 @@ from app.events import EventBus
 from app.install import Installer, ManagedRoots
 from app.install.provider import GitHubFileProvider
 from app.install.service import InstallService, InstallUnavailable
+from app.services.adapter_service import AdapterService
 from app.search.github_client import GitHubClient
 from app.security import require_github_source
 from app.services import PluginService
@@ -30,6 +31,7 @@ class Runtime:
     events: EventBus = field(default_factory=EventBus)
     sessions: SessionStore = field(default_factory=SessionStore)
     installs: InstallService | None = None
+    adapters: "AdapterService | None" = None
 
     @classmethod
     def create(
@@ -69,6 +71,8 @@ class Runtime:
             plugin_lookup=plugins.get,
             confirmation_ttl=settings.confirmation_ttl_seconds,
         )
+        # 阶段 6：适配器预览（只读），复用同一 provider 装配
+        adapters = AdapterService(conn, provider_factory=provider_factory)
         return cls(
             settings=settings,
             conn=conn,
@@ -76,6 +80,7 @@ class Runtime:
             events=bus,
             sessions=SessionStore(ttl_seconds=settings.session_ttl_seconds),
             installs=installs,
+            adapters=adapters,
         )
 
     def close(self) -> None:

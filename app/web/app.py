@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
+from app.adapters import AdapterError
 from app.install import InstallError
 from app.install.confirmation import ConfirmationError
 from app.install.operation import OperationError
@@ -180,6 +181,13 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
         # 状态不允许 / 令牌不匹配 / 计划已变化：409，提示必须重新走确认流程。
         return _json_response(
             409, {"error": "operation_rejected", "detail": sanitize_for_log(exc)}
+        )
+
+    @app.exception_handler(AdapterError)
+    async def _adapter_rejected(_: Request, exc: AdapterError) -> JSONResponse:
+        # 适配器无法处理该插件 / 该客户端格式：400，绝不做猜测式降级。
+        return _json_response(
+            400, {"error": "adapter_rejected", "detail": sanitize_for_log(exc)}
         )
 
     @app.exception_handler(InstallError)
@@ -452,6 +460,39 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
         """取消尚未执行的操作。"""
         _require_write_auth(request)
         return _installs().cancel(operation_id, actor="user").to_dict()
+
+    # ------------------------------------------------------------------ #
+    # 阶段 6：插件适配器（只读预览）
+    # ------------------------------------------------------------------ #
+    @app.get("/api/adapters")
+    async def list_adapters() -> dict[str, Any]:
+        """列出已支持的插件类型与客户端格式（含证据等级与来源文档）。"""
+        if rt.adapters is None:
+            raise AdapterError("适配器服务未装配")
+        return rt.adapters.describe()
+
+    @app.get("/api/plugins/{plugin_id}/adapt")
+    async def adapt_plugin(
+        plugin_id: str,
+        kind: str | None = None,
+        profile: str | None = None,
+        command: str | None = None,
+        args: str | None = None,
+    ) -> dict[str, Any]:
+        """用适配器校验该插件，并可生成客户端配置片段（**只读，不写盘**）。
+
+        客户端配置的写入必须走阶段 5 的安装闭环（计划 → 用户确认 → 执行）。
+        """
+        if rt.adapters is None:
+            raise AdapterError("适配器服务未装配")
+        parsed_args = [a for a in (args or "").split(" ") if a] if args else []
+        return rt.adapters.preview(
+            rt.plugins.get(plugin_id),
+            kind=kind,
+            profile_key=profile,
+            command=command,
+            args=parsed_args,
+        )
 
     # ------------------------------------------------------------------ #
     # 阶段 4：SSE 实时事件流（只读 GET）

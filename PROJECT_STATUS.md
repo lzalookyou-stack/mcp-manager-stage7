@@ -24,7 +24,7 @@
 | 3 搜索/分析/评分/安全审查 | ✅ 已完成 | https://github.com/lzalookyou-stack/mcp-manager-stage3 | 154 项测试全绿；MCP stdio 冒烟 9 项通过；Web 实机验证通过 |
 | 4 网页控制台交互 | ✅ 已完成 | https://github.com/lzalookyou-stack/mcp-manager-stage4 | 175 项测试全绿；SSE 端到端真实验证；Web 实机验证通过 |
 | 5 安全安装闭环 | ✅ 已完成 | https://github.com/lzalookyou-stack/mcp-manager-stage5 | 202 项测试全绿；MCP 冒烟 10 项通过；真实 HTTP 授权链路 16 项通过 |
-| 6 插件适配器 | ⬜ 未开始 | — | — |
+| 6 插件适配器 | ✅ 已完成 | https://github.com/lzalookyou-stack/mcp-manager-stage6 | 225 项测试全绿；3 类适配器；4 个客户端格式经官方文档正文核查 |
 | 7 MCP 集成 | ⬜ 未开始 | — | — |
 | 8 完整测试与交付 | ⬜ 未开始 | — | — |
 
@@ -37,7 +37,7 @@
 | 3 | https://github.com/lzalookyou-stack/mcp-manager-stage3 | 交付提交 `2d4522bece572ca836dde936d30d8da01f8e99c6`；状态回填提交 `2c8684c7b773ceb6781aabbe7009b7a86a457eb7` | ✅ 已推送（远端 `refs/heads/main` 已回读核对 = 本地 HEAD，45 blob / 11 tree，`truncated: false`） |
 | 4 | https://github.com/lzalookyou-stack/mcp-manager-stage4 | 交付提交 `ca56e1a4ec0de9e955d323b1899c2b22989e406a`；状态回填提交 `1b59dfdbc74fdf36844690ce25e1e4b11d3f1c94` | ✅ 已推送（远端 `refs/heads/main` 已回读核对 = 本地 HEAD，48 blob，`truncated: false`） |
 | 5 | https://github.com/lzalookyou-stack/mcp-manager-stage5 | 交付提交 `d4de5865e3d0246ae92810971a1e8136ba414bff`；状态回填提交 `161010c2f4f4583280e195b01c71868bbe6cba20` | ✅ 已推送（远端 `refs/heads/main` 已回读核对 = 本地 HEAD，62 blob / 12 tree，`truncated: false`，本地跟踪文件与远端文件树逐一比对无差异） |
-| 6 | （推送后回填） | （推送后回填） | — |
+| 6 | https://github.com/lzalookyou-stack/mcp-manager-stage6 | （推送后回填） | — |
 | 7 | （推送后回填） | （推送后回填） | — |
 | 8 | （推送后回填） | （推送后回填） | — |
 
@@ -112,6 +112,19 @@
 
 ---
 
+## 验证基线（阶段 6）
+
+- `pytest -q -p no:cacheprovider`：**225 passed**（阶段 6 新增 23 项，`tests/test_stage6_adapters.py`）。
+- 客户端格式核查（抓取官方文档正文）：4 个 profile 标为【已验证】并记录来源 URL；
+  1 个（Cursor）标为【未检查】，`writable=False`，**禁止写入**。
+- 关键断言：不同客户端顶层键名**确实不同**（VS Code 工作区 `servers` vs 其余 `mcpServers`）；
+  未验证 profile 调 `assert_writable()` 抛异常；MCP 片段拒绝在无 `command` 时生成；
+  适配预览**不产生任何文件变更**。
+
+详细核查记录见 `docs/adapters.md`。
+
+---
+
 ## 验证基线（阶段 5）
 
 以下为**真实执行**得到的结果（非声称）：
@@ -154,7 +167,9 @@
   `/api/operations`（列表）与 `/api/operations/{id}`（详情 + 确认状态 + 步骤日志）为只读；`/api/tasks` 仍读取审计日志。
 - MCP 工具 `request_install` **不产生任何安装行为**：它只生成「等待用户确认」的安装计划（`ok: true, status: awaiting_confirmation`）；
   未知条目返回 `not_found`，计划被拒返回 `plan_rejected`。Agent **无法**确认或执行，响应中**不含**任何确认令牌。
-- 无插件适配器（阶段 6）。
+- 插件适配器已支持 `skill` / `rules_instructions` / `mcp_server` 三类；
+  `agent_plugin` / `command` / `hook` / `adapter_extension` **仍无适配器**（`get_adapter` 显式抛 `AdapterError`）。
+- 客户端配置的**写入**尚未接入界面：阶段 6 只提供只读预览与配置片段，实际写入需走阶段 5 的安装闭环。
 - 计划中的 `commands` 恒为空：本系统**默认禁止**自动执行仓库内安装脚本。
 - 本项目自身**尚无 LICENSE**（阶段 8 前确认）。
 - 安全审查为**静态模式匹配**：必然存在漏报，未命中**不代表**安全。
