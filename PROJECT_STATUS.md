@@ -38,7 +38,7 @@
 | 4 | https://github.com/lzalookyou-stack/mcp-manager-stage4 | 交付提交 `ca56e1a4ec0de9e955d323b1899c2b22989e406a`；状态回填提交 `1b59dfdbc74fdf36844690ce25e1e4b11d3f1c94` | ✅ 已推送（远端 `refs/heads/main` 已回读核对 = 本地 HEAD，48 blob，`truncated: false`） |
 | 5 | https://github.com/lzalookyou-stack/mcp-manager-stage5 | 交付提交 `d4de5865e3d0246ae92810971a1e8136ba414bff`；状态回填提交 `161010c2f4f4583280e195b01c71868bbe6cba20` | ✅ 已推送（远端 `refs/heads/main` 已回读核对 = 本地 HEAD，62 blob / 12 tree，`truncated: false`，本地跟踪文件与远端文件树逐一比对无差异） |
 | 6 | https://github.com/lzalookyou-stack/mcp-manager-stage6 | 交付提交 `d0d927d6557617e34c65035de2fd1a9da018c217`；状态回填提交 `b9cfe500d7c2014c9e9d6fa526e706c3349a07c4` | ✅ 已推送（远端 `refs/heads/main` 已回读核对 = 本地 HEAD，72 blob / 13 tree，`truncated: false`，本地跟踪文件与远端文件树逐一比对无差异） |
-| 7 | （推送后回填） | （推送后回填） | — |
+| 7 | https://github.com/lzalookyou-stack/mcp-manager-stage7 | 交付提交 `a8c387fed92b8b5aa9c50108ee6d543619e67860`；状态回填提交 `（回填后写实）` | ✅ 已推送（远端 `refs/heads/main` 已回读核对 = 本地 HEAD，73 blob / 13 tree，`truncated: false`，本地跟踪文件与远端文件树逐一比对无差异；另在**干净 worktree 检出该提交**复跑 246 passed + 冒烟 21 项 PASS） |
 | 8 | （推送后回填） | （推送后回填） | — |
 
 ---
