@@ -106,9 +106,21 @@ def main() -> int:
 
         tools = client.request("tools/list", {})
         names = sorted(t["name"] for t in tools.get("result", {}).get("tools", []))
-        check("tools/list 返回 4 个工具", len(names) == 4, f"{names}")
-        for expected in ("list_plugins", "get_plugin", "get_stats", "request_install"):
+        check("tools/list 返回 13 个工具", len(names) == 13, f"{names}")
+        for expected in (
+            "list_plugins", "get_plugin", "get_stats", "list_installed",
+            "search_projects", "inspect_project", "compare_projects",
+            "inspect_plugin", "request_install", "request_operation",
+            "get_install_plan", "get_operation_status", "list_operation_history",
+        ):
             check(f"包含工具 {expected}", expected in names)
+
+        # 关键安全断言：Agent 侧**不得**存在确认 / 执行工具
+        forbidden = [
+            n for n in names
+            if "confirm" in n or "execute" in n
+        ]
+        check("不暴露任何 confirm / execute 工具", forbidden == [], f"{forbidden}")
 
         call = client.request("tools/call", {"name": "get_stats", "arguments": {}})
         content = call.get("result", {}).get("content", [])

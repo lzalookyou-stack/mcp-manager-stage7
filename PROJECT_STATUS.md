@@ -1,7 +1,7 @@
 # PROJECT_STATUS — mcp-manager
 
 > 跨对话 / 跨阶段的权威状态快照。**所有「已完成/未实现」的判断以本文件为准。**
-> 最后更新：2026-10-09（阶段 4 收口）
+> 最后更新：2026-10-10（阶段 7 收口）
 
 ---
 
@@ -25,7 +25,7 @@
 | 4 网页控制台交互 | ✅ 已完成 | https://github.com/lzalookyou-stack/mcp-manager-stage4 | 175 项测试全绿；SSE 端到端真实验证；Web 实机验证通过 |
 | 5 安全安装闭环 | ✅ 已完成 | https://github.com/lzalookyou-stack/mcp-manager-stage5 | 202 项测试全绿；MCP 冒烟 10 项通过；真实 HTTP 授权链路 16 项通过 |
 | 6 插件适配器 | ✅ 已完成 | https://github.com/lzalookyou-stack/mcp-manager-stage6 | 225 项测试全绿；3 类适配器；4 个客户端格式经官方文档正文核查 |
-| 7 MCP 集成 | ⬜ 未开始 | — | — |
+| 7 MCP 集成 | ✅ 已完成 | https://github.com/lzalookyou-stack/mcp-manager-stage7 | 246 项测试全绿；MCP stdio 冒烟 21 项通过；13 个工具，**不暴露任何确认/执行工具** |
 | 8 完整测试与交付 | ⬜ 未开始 | — | — |
 
 ### 阶段仓库
@@ -109,6 +109,33 @@
 **阶段 4 的 SSE 验证方式（重要）**：`TestClient` 的同步 `stream()` 在等待流式响应时无法再发第二个请求（会死锁，且连接永不结束）。因此 SSE 的推送验证改为：
 1. 单元测试在 **ASGI 层**直接驱动（`app(scope, receive, send)`），真实验证 `event: audit` 与数据体；
 2. 另有一次**真实 HTTP 端到端**验证（真实 uvicorn + 后台 `curl -N` 挂 SSE，同时触发搜索与审查），实际收到 19 条事件（含 `search.started` / `audit` / `search.finished` / `review.started` / `review.progress` / `review.finished`），且**未出现任何令牌或凭据**。
+
+---
+
+## 验证基线（阶段 7）
+
+以下为**真实执行**得到的结果（非声称）：
+
+- `pytest`（串行，`-q -p no:cacheprovider --tb=short`）：**246 passed in 13.00s**
+  （阶段 7 新增 21 项，`tests/test_stage7_mcp.py`）。
+- MCP stdio 冒烟 `scripts/smoke_mcp_stdio.py`：**21 项 PASS，退出码 0**。
+- `tools/list` 实测返回 **13 个工具**（`compare_projects` / `get_install_plan` /
+  `get_operation_status` / `get_plugin` / `get_stats` / `inspect_plugin` /
+  `inspect_project` / `list_installed` / `list_operation_history` / `list_plugins` /
+  `request_install` / `request_operation` / `search_projects`）。
+- **关键安全断言**：不存在任何名字含 `confirm` / `execute` 的工具（实测 `forbidden == []`）。
+  即 Agent 侧**没有**任何可以自行完成授权或执行安装的工具。
+- Agent 侧行为实测：`request_install` 对未知条目返回 `{"ok": false, "error": "not_found"}`；
+  响应字段集合为 `['detail', 'error', 'ok']`，**不含任何确认令牌**。
+- `search_projects` 在未配置 GitHub 令牌时显式返回 `search_unavailable`，**不伪造搜索结果**。
+- MCP 与网页共用同一个 `InstallService` 实例（`test_mcp_and_web_share_state`）：
+  Agent 提交的申请会真实出现在网页待确认列表中，但**授权仍只能由用户在网页完成**。
+
+**关于本仓库包含的静态检查修正（诚实留痕）**：阶段 7 的推送动作实际在阶段 8 的
+ruff 静态检查之后才执行，因此本仓库中 `app/mcp_server/server.py`、
+`scripts/smoke_mcp_stdio.py` 两个文件包含 ruff 的格式化修正（导入排序、行尾换行）。
+这些修正**不改变任何语义**，上表所有测试与冒烟结果均在该状态下取得。
+阶段 8 仓库将提交剩余的静态检查修正与 `ruff.toml`。
 
 ---
 
